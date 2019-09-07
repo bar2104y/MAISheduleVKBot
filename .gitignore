@@ -1,0 +1,7 @@
+# Конфиг Читать в README
+config.py
+*tar.gz
+*.db
+*.log
+
+/__pycache__/*
