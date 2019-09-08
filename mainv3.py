@@ -50,7 +50,7 @@ def main():
                 info = parse(url)
                 
                 # Проверка на наличие данных
-                if info != None or len(info) < 3:
+                if info != None and len(info) >= 3:
                     # Формирование сообщения
                     mes = 'Держи расписание на ближайшие два дня\n\n'
                     for i in range(1, 3):
