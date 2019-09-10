@@ -36,27 +36,35 @@ for group in groups:
     save_data(group)
 
 
-for dat in data:
+for group in groups:
+    cursor.execute("SELECT `user_id` FROM usersgroup WHERE `group_n` = ?", (group,))
+    user_ids_db = cursor.fetchall()
+    user_ids = ''
+    for user_id in user_ids_db:
+        user_ids += str(user_id[0])+','
+    print(user_ids[:-1])
+
+    tmp = get_group_pars_today(dat[1])
+
+    i=0
+    while tmp[i][2] != '10:45 – 12:15': i+=1
+    tmp = tmp[i]
+    
+    mes = 'Сегодня наверное '+tmp[1]+'\nГруппа: ' +tmp[0]+'\n\nСледущая пара '+tmp[2]+'\n'
+    mes += tmp[4]+'\n'+tmp[3]+'\n'+tmp[5]+'\n'
+
     try:
-        
-        tmp = get_group_pars_today(dat[1])
-
-        i=0
-        while tmp[i][2] != '10:45 – 12:15': i+=1
-        tmp = tmp[i]
-        
-        mes = 'Сегодня наверное '+tmp[1]+'\nГруппа: ' +tmp[0]+'\n\nСледущая пара '+tmp[2]+'\n'
-        mes += tmp[4]+'\n'+tmp[3]+'\n'+tmp[5]+'\n'
-
         vk.messages.send(
-            peer_id=dat[0],
+            user_ids=user_ids,
             random_id=get_random_id(),
             message=mes
         )
         logmes = '[{}]User [{}] from group [{}] SUCCESSFUL\n'.format(time.strftime("%d/%m-%H:%M:%S", time.localtime()),dat[0],dat[1])
     except Exception as e:
-        print(e.__class__)
+        logmes = '[{}] {}\n'.format(time.strftime("%d/%m-%H:%M:%S", time.localtime()), str(e))
     finally:
         f = open('BotLog.log', 'a')
         f.write(logmes)
         f.close()
+    
+    time.sleep(1)

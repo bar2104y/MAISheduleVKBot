@@ -35,16 +35,20 @@ class Classificator(Log):
         self.add_your_group = 'Я не знаю Ваш номер группы, напишите его мне\n\nПример номера группы: м3о-100с-16'
         self.error_group_number = 'Номер группы написан неправильно, пожалуйста, перепроверьте правильность написания номера группы\n\nПример номера группы: м3о-100с-16'
         self.added_notifications = '\n\nНомер группы звписан, теперь Вы будете получать уведомления перед парами, чтобы отказаться от этих уведомлений, нажмите "Сбросить"'
+        self.was_reset = 'Ваши данные были стерты, уведомления приходить не будут'
 
     # Функции определения типа запроса
     def is_help(self,txt):
-        return(re.search(r'(помо|help|faq|вопро|Начать)',txt) != None)
+        return(re.search(r'(помо|help|faq|вопро|начать)',txt) != None)
 
     def is_schedule_request(self,txt):
         return(re.search(r'(распи|скаж|скин|пар|лекци)',txt) != None)
+    
+    def reset(self,txt):
+        return(re.search(r'(сброс|отмен)',txt) != None)
 
     def valid_group_number(self,txt):
-        return(re.search(r'([А-я][0-9]{1,2}[А-я])-([0-9]{2,4}[А-я]{1,2})-([0-9]{2})',txt) != None)
+        return(re.search(r'([А-я]{0,1}[0-9]{1,2}[А-я])-([0-9]{2,4}[А-я]{1,2})-([0-9]{2})',txt) != None)
     
 
     def get_schedule(self, group):
@@ -78,6 +82,18 @@ class Classificator(Log):
         # Запрос на помощь
         if self.is_help(txt):
             mes = self.help_text
+            cursor.execute("SELECT * FROM usersgroup WHERE user_id=?", (user_id,))
+            user_db = cursor.fetchall()
+            if len(user_db) > 0:
+                keyboard.add_button('Расписание', color=VkKeyboardColor.PRIMARY)
+                keyboard.add_line()
+                
+        elif self.reset(txt):
+            cursor.execute("DELETE FROM usersgroup WHERE user_id=?", (user_id,))
+            conn.commit()
+
+            mes = self.was_reset
+
         # ЗАпрос на расписание
         elif self.is_schedule_request(txt):
             
