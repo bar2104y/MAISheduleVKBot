@@ -42,9 +42,8 @@ for group in groups:
     user_ids = ''
     for user_id in user_ids_db:
         user_ids += str(user_id[0])+','
-    print(user_ids[:-1])
 
-    tmp = get_group_pars_today(dat[1])
+    tmp = get_group_pars_today(group)
 
     i=0
     while tmp[i][2] != '10:45 – 12:15': i+=1
