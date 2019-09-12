@@ -45,25 +45,28 @@ for group in groups:
 
     tmp = get_group_pars_today(group)
 
-    i=0
-    while tmp[i][2] != '13:00 – 14:30': i+=1
-    tmp = tmp[i]
-    
-    mes = 'Сегодня наверное '+tmp[1]+'\nГруппа: ' +tmp[0]+'\n\nСледущая пара '+tmp[2]+'\n'
-    mes += tmp[4]+'\n'+tmp[3]+'\n'+tmp[5]+'\n'
-
     try:
-        vk.messages.send(
-            user_ids=user_ids,
-            random_id=get_random_id(),
-            message=mes
-        )
-        logmes = '[{}]User [{}] from group [{}] SUCCESSFUL\n'.format(time.strftime("%d/%m-%H:%M:%S", time.localtime()),dat[0],dat[1])
+        i=0
+        while tmp[i][2] != '13:00 – 14:30': i+=1
+        tmp = tmp[i]
+        mes = 'Сегодня наверное '+tmp[1]+'\nГруппа: ' +tmp[0]+'\n\nСледущая пара '+tmp[2]+'\n'
+        mes += tmp[4]+'\n'+tmp[3]+'\n'+tmp[5]+'\n'
+
+        try:
+            vk.messages.send(
+                user_ids=user_ids,
+                random_id=get_random_id(),
+                message=mes
+            )
+            logmes = '[{}]User [{}] from group [{}] SUCCESSFUL\n'.format(time.strftime("%d/%m-%H:%M:%S", time.localtime()),dat[0],dat[1])
+        except Exception as e:
+            logmes = '[{}] {}\n'.format(time.strftime("%d/%m-%H:%M:%S", time.localtime()), str(e))
+        finally:
+            f = open('BotLog.log', 'a')
+            f.write(logmes)
+            f.close()
+
     except Exception as e:
-        logmes = '[{}] {}\n'.format(time.strftime("%d/%m-%H:%M:%S", time.localtime()), str(e))
-    finally:
-        f = open('BotLog.log', 'a')
-        f.write(logmes)
-        f.close()
+        print(str(e))
     
     time.sleep(1)
