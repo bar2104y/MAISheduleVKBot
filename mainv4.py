@@ -5,18 +5,11 @@ from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
 from vk_api.utils import get_random_id
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 
-# 
-from parse import parse
-
 # Импорт конфигурации
 from config import token, group_vk
-from resourse import Classificator
+from ScheduleBot import ScheduleBot
 
-# Подключение к БД
-conn = sqlite3.connect("MAIShedule.db")
-cursor = conn.cursor()
-
-Controller = Classificator()
+Controller = ScheduleBot() 
 
 def main():
     # Инициализация бота
@@ -44,3 +37,4 @@ while True:
         main()
     except Exception as e:
         print(e.__class__)
+        print(str(e))
