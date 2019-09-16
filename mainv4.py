@@ -1,4 +1,4 @@
-import time, sqlite3
+import time
 
 import vk_api
 from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType

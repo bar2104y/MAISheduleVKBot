@@ -11,7 +11,7 @@ class Log():
     """Ведение логов"""
 
     def saveToFile(self, e):
-        filename = time.strftime("%d-%m.log", time.localtime())
+        filename = str(time.strftime("%d-%m.log", time.localtime()))
         f = open(filename, 'a')
         f.write("[{}] {}\n".format(time.strftime("%d/%m-%H:%M:%S", time.localtime()), e))
         f.close()
@@ -19,7 +19,7 @@ class Log():
     # Логгирование ошибок
     def logError(self,e):
         try:
-            self.saveToFile( str(e.__class__) + str(e) )            
+            self.saveToFile( str(e.__class__) + ' | '+ str(e) )            
         except Exception as err:
             print(str(err))
 
@@ -47,11 +47,23 @@ class DataBase():
     def __init__(self):
         self.conn = sqlite3.connect("MAISchedule2.db")
         self.cursor = self.conn.cursor()
+    
+    def get_groups(self):
+        self.cursor.execute("SELECT DISTINCT group_number FROM users")
+        return(self.cursor.fetchall())
+    
+    def get_users_by_group(self,group):
+        self.cursor.execute("SELECT user_id FROM users WHERE group_number = ?", (group, ))
+        return(self.cursor.fetchall())
 
 
 class ScheduleBot(Log, DetectionRequests,DataBase):
     def __init__(self):
-        super(ScheduleBot, self).__init__()
+        try:
+            super(ScheduleBot, self).__init__()
+        except Exception as e:
+            self.logError(e)
+
         self.not_found_group = 'Такая группа не найдена'
         self.help_text = 'Привет, я глупый бот, так что ничего особенного от меня не жди).\n\nЧтобы начать, напиши полный номер своей группы(М3О-777с-18) Все буквы должны быть написаны кирилицей, в начале буква О, а не цифра 0. Регистр не имеет значения\nБот автоматически запоминает номер группы, поэтому чтобы повторно получить расписание необходимо лишь нажать на соответсвующую кнопку на клавиатуре.\nЕсли вам необходимо сменить/сбросить номер группы или отказаться от уведомлений, нажмите на клавиатуре "Сбросить"\n\nЕсли возникнут какие-то вопросы, напиши "Помощь"'
         self.add_your_group = 'Я не знаю Ваш номер группы, напишите его мне\n\nПример номера группы: м3о-100с-16'
@@ -115,17 +127,23 @@ class ScheduleBot(Log, DetectionRequests,DataBase):
                 # Если не найдено - добавляем
                 if len(self.cursor.fetchall()) == 0:
                     for j in range(len(res[i][1])):
-                        self.cursor.execute("INSERT INTO data VALUES (?,?,?,?,?,?)",
+                        try:
+                            self.cursor.execute("INSERT INTO data VALUES (?,?,?,?,?,?)",
                                     (group_id, res[i][0],
                                     res[i][1][j][0], res[i][1][j][1],
                                     res[i][1][j][2], res[i][1][j][3]))
+                        except Exception as e:
+                            self.logError(e)
                 # Иначе - обновляем
                 else:
                     for j in range(len(res[i][1])):
-                        self.cursor.execute("UPDATE data SET type=?,name =?,room=? WHERE group_id=? and day_i=? and time=?",
+                        try:
+                            self.cursor.execute("UPDATE data SET type=?,name =?,room=? WHERE group_id=? and day_i=? and time=?",
                                     ( res[i][1][j][1], res[i][1][j][2],
                                     res[i][1][j][3], group_id,
                                     res[i][0], res[i][1][j][0]))
+                        except Exception as e:
+                            self.logError(e)
                 # Применяем изменения
                 self.conn.commit()
 
@@ -135,10 +153,13 @@ class ScheduleBot(Log, DetectionRequests,DataBase):
 
     def get_group_pars_day(self, group_id, today=time.strftime("%d.%m", time.localtime())):
         # Выделяем всю информацию по группе в определенный день
-        self.cursor.execute("SELECT * FROM data WHERE group_id=? and day_i=?", (group_id, today))
-        tmp = self.cursor.fetchall()
+        try:
+            self.cursor.execute("SELECT * FROM data WHERE group_id=? and day_i=?", (group_id, today))
+            tmp = self.cursor.fetchall()
 
-        return(tmp)
+            return(tmp)
+        except Exception as e:
+            self.logError(e)
     
     def generate_text_schedule_at_days(self,group,days=2):
         hello = ['Вот расписание на {}\n',
@@ -180,6 +201,7 @@ class ScheduleBot(Log, DetectionRequests,DataBase):
         return(mes)
             
     def generate_text_lesson(self,group,lesson,day = time.strftime("%d.%m", time.localtime())):
+        lesson = int(lesson)
         if lesson == 1:
             l_time = '09:00 – 10:30'
         elif lesson == 2:
@@ -193,20 +215,25 @@ class ScheduleBot(Log, DetectionRequests,DataBase):
         else:
             return(False)
         
-        self.cursor.execute("SELECT * FROM data WHERE group_id=? and day_i=? and time=?", (group, day, l_time))
-        lesson_data = self.cursor.fetchall()
+        try:
+            self.cursor.execute("SELECT * FROM data WHERE group_id=? and day_i=? and time=?", (group, day, l_time,))
+            lesson_data = self.cursor.fetchall()
+        except Exception as e:
+            self.logError(e)
         
         if len(lesson_data) == 1:
             lesson_data = lesson_data[0]
             mes = 'Сегодня наверное ' + lesson_data[1]+ '\nГруппа: ' + lesson_data[0]+ '\n\nСледущая пара ' + lesson_data[2]+ '\n' + lesson_data[4]+'\n' + lesson_data[3]+'\n' + lesson_data[5] + '\n'
+            return(mes)
         else:
             return(False)
-        
-        print(mes)
     
     def get_users_group(self, user_id):
-        self.cursor.execute("SELECT `group_number` FROM users WHERE user_id=?", (user_id, ))
-        groups = self.cursor.fetchall()
+        try:
+            self.cursor.execute("SELECT `group_number` FROM users WHERE user_id=?", (user_id, ))
+            groups = self.cursor.fetchall()
+        except Exception as e:
+            self.logError(e)
         return(groups)
 
     def thread(self,text,user_id):
@@ -226,8 +253,11 @@ class ScheduleBot(Log, DetectionRequests,DataBase):
                 keyboard.add_line()
                 
         elif self.reset(txt):
-            self.cursor.execute("DELETE FROM users WHERE user_id=?", (user_id,))
-            self.conn.commit()
+            try:
+                self.cursor.execute("DELETE FROM users WHERE user_id=?", (user_id,))
+                self.conn.commit()
+            except Exception as e:
+                self.logError(e)
 
             mes = self.was_reset
 
@@ -239,20 +269,27 @@ class ScheduleBot(Log, DetectionRequests,DataBase):
                 mes = self.add_your_group
             else:
                 for group in groups:
-                    self.save_data(group[0])
-                    mes += self.generate_text_schedule_at_days(group[0])
+                    try:
+                        self.save_data(group[0])
+                        mes += self.generate_text_schedule_at_days(group[0])
+                    except Exception as e:
+                        self.logError(e)
 
                 keyboard.add_button('Расписание', color=VkKeyboardColor.PRIMARY)
                 keyboard.add_line()
 
         elif self.valid_group_number(txt):
             txt = txt.upper()
+            self.save_data(txt)
             mes = self.generate_text_schedule_at_days(txt)
 
-            self.cursor.execute("SELECT * FROM users WHERE user_id=?", ( user_id , ))
-            if len(self.cursor.fetchall()) < 1:
-                self.cursor.execute("INSERT INTO users  VALUES (NULL,?,?)", (user_id, txt))
-            self.conn.commit()
+            try:
+                self.cursor.execute("SELECT * FROM users WHERE user_id=?", ( user_id , ))
+                if len(self.cursor.fetchall()) < 1:
+                    self.cursor.execute("INSERT INTO users  VALUES (NULL,?,?)", (user_id, txt))
+                self.conn.commit()
+            except Exception as e:
+                self.logError(e)
 
             mes += self.added_notifications  
             keyboard.add_button('Расписание', color=VkKeyboardColor.PRIMARY)
