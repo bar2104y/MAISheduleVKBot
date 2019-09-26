@@ -68,7 +68,7 @@ class ScheduleBot(Log, DetectionRequests,DataBase):
         self.help_text = 'Привет, я глупый бот, так что ничего особенного от меня не жди).\n\nЧтобы начать, напиши полный номер своей группы(М3О-777с-18) Все буквы должны быть написаны кирилицей, в начале буква О, а не цифра 0. Регистр не имеет значения\nБот автоматически запоминает номер группы, поэтому чтобы повторно получить расписание необходимо лишь нажать на соответсвующую кнопку на клавиатуре.\nЕсли вам необходимо сменить/сбросить номер группы или отказаться от уведомлений, нажмите на клавиатуре "Сбросить"\n\nЕсли возникнут какие-то вопросы, напиши "Помощь"'
         self.add_your_group = 'Я не знаю Ваш номер группы, напишите его мне\n\nПример номера группы: м3о-100с-16'
         self.error_group_number = 'Номер группы написан неправильно, пожалуйста, перепроверьте правильность написания номера группы\n\nПример номера группы: м3о-100с-16'
-        self.added_notifications = '\n\nНомер группы звписан, теперь Вы будете получать уведомления перед парами, чтобы отказаться от этих уведомлений, нажмите "Сбросить"'
+        self.added_notifications = '\n\nНомер группы записан, теперь Вы будете получать уведомления перед парами, чтобы отказаться от этих уведомлений, нажмите "Сбросить"'
         self.was_reset = 'Ваши данные были стерты, уведомления приходить не будут'
 
     
@@ -122,10 +122,12 @@ class ScheduleBot(Log, DetectionRequests,DataBase):
             # Пребор дней
             for i in range(1,len(res)):
                 # Находим этот день в базе данных
-                self.cursor.execute("SELECT * FROM data WHERE group_id=? and day_i=?", (group_id, res[i][0]))
+                self.cursor.execute("DELETE FROM data WHERE group_id=? and day_i=?", (group_id, res[i][0]))
+                #self.cursor.execute("SELECT * FROM data WHERE group_id=? and day_i=?", (group_id, res[i][0]))
 
                 # Если не найдено - добавляем
-                if len(self.cursor.fetchall()) == 0:
+                if True:
+                # if len(self.cursor.fetchall()) == 0:
                     for j in range(len(res[i][1])):
                         try:
                             self.cursor.execute("INSERT INTO data VALUES (?,?,?,?,?,?)",
@@ -135,16 +137,16 @@ class ScheduleBot(Log, DetectionRequests,DataBase):
                         except Exception as e:
                             self.logError(e)
                 # Иначе - обновляем
-                else:
-                    for j in range(len(res[i][1])):
-                        try:
-                            self.cursor.execute("UPDATE data SET type=?,name =?,room=? WHERE group_id=? and day_i=? and time=?",
-                                    ( res[i][1][j][1], res[i][1][j][2],
-                                    res[i][1][j][3], group_id,
-                                    res[i][0], res[i][1][j][0]))
-                        except Exception as e:
-                            self.logError(e)
-                # Применяем изменения
+                # else:
+                #     for j in range(len(res[i][1])):
+                #         try:
+                #             self.cursor.execute("UPDATE data SET type=?,name =?,room=? WHERE group_id=? and day_i=? and time=?",
+                #                     ( res[i][1][j][1], res[i][1][j][2],
+                #                     res[i][1][j][3], group_id,
+                #                     res[i][0], res[i][1][j][0]))
+                #         except Exception as e:
+                #             self.logError(e)
+                # # Применяем изменения
                 self.conn.commit()
 
             return(True)
@@ -178,7 +180,7 @@ class ScheduleBot(Log, DetectionRequests,DataBase):
         day = 0
         while day < days and k < 30:
             today = time.strftime("%d.%m", time.localtime(time.time()+24*3600*j))
-            print(today)
+            #print(today)
             schedule = self.get_group_pars_day(group,today)
             
             k += 1
