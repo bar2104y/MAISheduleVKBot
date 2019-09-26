@@ -123,11 +123,4 @@ class Classificator(Log):
 
         keyboard.add_button('Сбросить', color=VkKeyboardColor.NEGATIVE)
 
-
         return(mes, keyboard.get_keyboard())
-                
-
-            
-
-        
-        

@@ -7,6 +7,8 @@ from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
 from vk_api.utils import get_random_id
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 
+from config import token, group_vk  
+
 class MAIScheduleVKBot():
     def __init__(self):
         self.not_found_group = 'Такая группа не найдена'
@@ -49,6 +51,7 @@ class MAIScheduleVKBot():
 
     def valid_group_number(self,txt):
         return(re.search(r'([А-я]{0,1}[0-9]{1,2}[А-я])-([0-9]{2,4}[А-я]{1,2})-([0-9]{2})',txt) != None)
+
 
     def parse(self, base_url):
         # Мои заголовки запроса
@@ -96,7 +99,6 @@ class MAIScheduleVKBot():
                 res.append([day_t, day_res])
         
         return(res)
-    
 
     def get_schedule(self, group):
         group = group.upper()
@@ -114,8 +116,6 @@ class MAIScheduleVKBot():
             mes = self.error_group_number
 
         return(mes)
-
-
 
     def thread(self, txt, user_id):
         txt = txt.lower()
@@ -213,11 +213,7 @@ class MAIScheduleVKBot():
         else:
             return(False)
         
-
-    def get_group_pars_today(self, group_id):
-        today=time.strftime("%d.%m", time.localtime())
-        # today="10.09"
-
+    def get_group_pars_today(self, group_id, today=time.strftime("%d.%m", time.localtime())):
         conn = sqlite3.connect("MAIShedule.db")
         cursor = conn.cursor()
 
@@ -225,3 +221,33 @@ class MAIScheduleVKBot():
         tmp = cursor.fetchall()
 
         return(tmp)
+
+
+class sendPars(MAIScheduleVKBot):
+    def __init__(self):
+        self.vk_session = vk_api.VkApi(token=token)
+        self.vk = self.vk_session.get_api()
+        self.users = []
+        self.conn = sqlite3.connect("MAIShedule.db")
+        self.cursor = self.conn.cursor()
+    
+    def get_users(self):
+        self.cursor.execute("SELECT * FROM usersgroup WHERE 1")
+        tmp = self.cursor.fetchall()
+        t_users = []
+
+        for tm in tmp:
+            if tm[0] not in t_users:
+                t_users.append(tm[0])
+        return(t_users)
+    
+    def get_groups(self):
+        self.cursor.execute("SELECT * FROM usersgroup WHERE 1")
+        tmp = self.cursor.fetchall()
+        t_groups = []
+
+        for tm in tmp:
+            if tm[0] not in t_groups:
+                t_groups.append(tm[1])
+        return(t_groups)
+    

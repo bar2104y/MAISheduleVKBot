@@ -39,7 +39,9 @@ def save_data(group_id, today=time.strftime("%d.%m", time.localtime())):
 
             except Exception as e:
                 print(e.__class__)
-
+        return(True)
+    else:
+        return(False)
         
     
 
