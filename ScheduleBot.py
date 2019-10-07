@@ -43,6 +43,13 @@ class DetectionRequests():
     def valid_group_number(self,txt):
         return(re.search(r'([А-я]{0,1}[0-9]{1,2}[А-я])-([0-9]{2,4}[А-я]{1,2})-([0-9]{2})',txt) != None)
 
+    def get_count_days(self,txt):
+        d = 2
+        try:
+            d = re.search(r'(распи|скаж|скин|пар|лекци)(.*?)([0-9]{1,3})',txt).group(3)
+        finally:
+            return(d)
+
 class DataBase():
     def __init__(self):
         self.conn = sqlite3.connect("MAISchedule2.db")
@@ -265,6 +272,7 @@ class ScheduleBot(Log, DetectionRequests,DataBase):
 
         # ЗАпрос на расписание
         elif self.is_schedule_request(txt):
+            d = int(self.get_count_days(txt))
              
             groups = self.get_users_group(user_id)
             if not groups:
@@ -273,7 +281,7 @@ class ScheduleBot(Log, DetectionRequests,DataBase):
                 for group in groups:
                     try:
                         self.save_data(group[0])
-                        mes += self.generate_text_schedule_at_days(group[0])
+                        mes += self.generate_text_schedule_at_days(group[0],d)
                     except Exception as e:
                         self.logError(e)
 
