@@ -1,4 +1,4 @@
-import time, sqlite3, re, requests, random
+import time, sqlite3, re, requests, random, datetime
 
 from bs4 import BeautifulSoup
 
@@ -39,6 +39,9 @@ class DetectionRequests():
     
     def reset(self,txt):
         return(re.search(r'(сброс|отмен)',txt) != None)
+    
+    def is_session(self,txt):
+        return(re.search(r'(сесси|экзам)',txt) != None)
 
     def valid_group_number(self,txt):
         return(re.search(r'([А-я]{0,1}[0-9]{1,2}[А-я])-([0-9]{2,4}[А-я]{1,2})-([0-9]{2})',txt) != None)
@@ -121,15 +124,21 @@ class ScheduleBot(Log, DetectionRequests,DataBase):
         
         return(res)
 
-    def save_data(self, group_id):
+    def save_data(self, group_id, is_session=False):
 
-        res = self.parse('https://mai.ru/education/schedule/detail.php?group='+group_id.upper())
+        if is_session:
+            res = self.parse('https://mai.ru/education/schedule/session.php?group='+group_id.upper())
+        else:
+            res = self.parse('https://mai.ru/education/schedule/detail.php?group='+group_id.upper())
                 
         if res[0] == 200:
             # Пребор дней
             for i in range(1,len(res)):
                 # Находим этот день в базе данных
-                self.cursor.execute("DELETE FROM data WHERE group_id=? and day_i=?", (group_id, res[i][0]))
+                if is_session:
+                    self.cursor.execute("DELETE FROM sessions WHERE group_id=? and day_i=?", (group_id, res[i][0]))
+                else:
+                    self.cursor.execute("DELETE FROM data WHERE group_id=? and day_i=?", (group_id, res[i][0]))
                 #self.cursor.execute("SELECT * FROM data WHERE group_id=? and day_i=?", (group_id, res[i][0]))
 
                 # Если не найдено - добавляем
@@ -137,23 +146,19 @@ class ScheduleBot(Log, DetectionRequests,DataBase):
                 # if len(self.cursor.fetchall()) == 0:
                     for j in range(len(res[i][1])):
                         try:
-                            self.cursor.execute("INSERT INTO data VALUES (?,?,?,?,?,?)",
+                            if is_session:
+                                self.cursor.execute("INSERT INTO sessions VALUES (?,?,?,?,?,?)",
+                                    (group_id, res[i][0],
+                                    res[i][1][j][0], res[i][1][j][1],
+                                    res[i][1][j][2], res[i][1][j][3]))
+                            else:
+                                self.cursor.execute("INSERT INTO data VALUES (?,?,?,?,?,?)",
                                     (group_id, res[i][0],
                                     res[i][1][j][0], res[i][1][j][1],
                                     res[i][1][j][2], res[i][1][j][3]))
                         except Exception as e:
                             self.logError(e)
-                # Иначе - обновляем
-                # else:
-                #     for j in range(len(res[i][1])):
-                #         try:
-                #             self.cursor.execute("UPDATE data SET type=?,name =?,room=? WHERE group_id=? and day_i=? and time=?",
-                #                     ( res[i][1][j][1], res[i][1][j][2],
-                #                     res[i][1][j][3], group_id,
-                #                     res[i][0], res[i][1][j][0]))
-                #         except Exception as e:
-                #             self.logError(e)
-                # # Применяем изменения
+                
                 self.conn.commit()
 
             return(True)
@@ -164,6 +169,16 @@ class ScheduleBot(Log, DetectionRequests,DataBase):
         # Выделяем всю информацию по группе в определенный день
         try:
             self.cursor.execute("SELECT * FROM data WHERE group_id=? and day_i=?", (group_id, today))
+            tmp = self.cursor.fetchall()
+
+            return(tmp)
+        except Exception as e:
+            self.logError(e)
+    
+    def get_group_session(self, group_id):
+        # Выделяем всю информацию по группе в определенный день
+        try:
+            self.cursor.execute("SELECT * FROM sessions WHERE group_id=?", (group_id,))
             tmp = self.cursor.fetchall()
 
             return(tmp)
@@ -187,7 +202,6 @@ class ScheduleBot(Log, DetectionRequests,DataBase):
         day = 0
         while day < days and k < 30:
             today = time.strftime("%d.%m", time.localtime(time.time()+24*3600*j))
-            #print(today)
             schedule = self.get_group_pars_day(group,today)
             
             k += 1
@@ -200,6 +214,10 @@ class ScheduleBot(Log, DetectionRequests,DataBase):
             
             mes += '---------------------\n'
             mes += 'На ' + schedule[0][1] + ':\n'
+            
+            #print()
+            #print(datetime.datetime.strptime( schedule[0][1]+'.'+ str(datetime.datetime.now().year), "%d.%m.%Y").date().weekday())
+
             mes += 'Группа: ' + schedule[0][0] + '\n'
             for i in range(len(schedule)):
                 mes += 'Время: ' + schedule[i][2] +'\n'
@@ -208,7 +226,25 @@ class ScheduleBot(Log, DetectionRequests,DataBase):
                 mes += 'Где: ' + schedule[i][5] +'\n\n'
         
         return(mes)
-            
+
+    def generate_text_session(self,group,days=2):
+        hello = ['Сессия приближается {}\n']
+        mes = random.choice(hello)
+                
+        schedule = self.get_group_session(group)
+        
+        mes += '---------------------\n'
+        mes += 'На ' + schedule[0][1] + ':\n'
+        
+        mes += 'Группа: ' + schedule[0][0] + '\n'
+        for i in range(len(schedule)):
+            mes += 'Время: ' + schedule[i][2] +'\n'
+            mes += 'Тип: ' + schedule[i][3] +'\n'
+            mes += 'Что: ' + schedule[i][4] +'\n'
+            mes += 'Где: ' + schedule[i][5] +'\n\n'
+        
+        return(mes)
+
     def generate_text_lesson(self,group,lesson,day = time.strftime("%d.%m", time.localtime())):
         lesson = int(lesson)
         if lesson == 1:
@@ -232,7 +268,7 @@ class ScheduleBot(Log, DetectionRequests,DataBase):
         
         if len(lesson_data) == 1:
             lesson_data = lesson_data[0]
-            mes = 'Сегодня наверное ' + lesson_data[1]+ '\nГруппа: ' + lesson_data[0]+ '\n\nСледущая пара ' + lesson_data[2]+ '\n' + lesson_data[4]+'\n' + lesson_data[3]+'\n' + lesson_data[5] + '\n'
+            mes = 'Следущая пара ' + lesson_data[2]+ '\n' + lesson_data[5]+'\n'+lesson_data[4]+'\n' + lesson_data[3]+'\n' +  '\n'+ 'Сегодня наверное ' + lesson_data[1]+ '\nГруппа: ' + lesson_data[0]
             return(mes)
         else:
             return(False)
@@ -261,6 +297,7 @@ class ScheduleBot(Log, DetectionRequests,DataBase):
                 keyboard.add_button('Расписание', color=VkKeyboardColor.PRIMARY)
                 keyboard.add_line()
                 
+                
         elif self.reset(txt):
             try:
                 self.cursor.execute("DELETE FROM users WHERE user_id=?", (user_id,))
@@ -287,6 +324,26 @@ class ScheduleBot(Log, DetectionRequests,DataBase):
 
                 keyboard.add_button('Расписание', color=VkKeyboardColor.PRIMARY)
                 keyboard.add_line()
+                keyboard.add_button('😈Сессия😈', color=VkKeyboardColor.PRIMARY)
+                keyboard.add_line()
+        
+        elif self.is_session:
+            groups = self.get_users_group(user_id)
+            if not groups:
+                mes = self.add_your_group
+            else:
+                for group in groups:
+                    try:
+                        self.save_data(group[0],True)
+                        mes += self.generate_text_session(group[0])
+                    except Exception as e:
+                        self.logError(e)
+
+                keyboard.add_button('Расписание', color=VkKeyboardColor.PRIMARY)
+                keyboard.add_line()
+                keyboard.add_button('😈Сессия😈', color=VkKeyboardColor.PRIMARY)
+                keyboard.add_line()
+            
 
         elif self.valid_group_number(txt):
             txt = txt.upper()
