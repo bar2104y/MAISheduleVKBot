@@ -215,9 +215,6 @@ class ScheduleBot(Log, DetectionRequests,DataBase):
             mes += '---------------------\n'
             mes += 'На ' + schedule[0][1] + ':\n'
             
-            #print()
-            #print(datetime.datetime.strptime( schedule[0][1]+'.'+ str(datetime.datetime.now().year), "%d.%m.%Y").date().weekday())
-
             mes += 'Группа: ' + schedule[0][0] + '\n'
             for i in range(len(schedule)):
                 mes += 'Время: ' + schedule[i][2] +'\n'
@@ -233,11 +230,12 @@ class ScheduleBot(Log, DetectionRequests,DataBase):
                 
         schedule = self.get_group_session(group)
         
-        mes += '---------------------\n'
-        mes += 'На ' + schedule[0][1] + ':\n'
+        mes += '---\n'
+        
         
         mes += 'Группа: ' + schedule[0][0] + '\n'
         for i in range(len(schedule)):
+            mes += schedule[i][1] + ':\n'
             mes += 'Время: ' + schedule[i][2] +'\n'
             mes += 'Тип: ' + schedule[i][3] +'\n'
             mes += 'Что: ' + schedule[i][4] +'\n'
@@ -285,17 +283,19 @@ class ScheduleBot(Log, DetectionRequests,DataBase):
         mes = ''
         txt = text.lower()
         keyboard = VkKeyboard(one_time=False)
-        keyboard.add_button('Помощь', color=VkKeyboardColor.POSITIVE)
+        keyboard.add_button('❔Помощь❔', color=VkKeyboardColor.POSITIVE)
         keyboard.add_line()
 
         # Запрос на помощь
         if self.is_help(txt):
             mes = self.help_text
-            self.cursor.execute("SELECT * FROM users WHERE user_id=?", (user_id,))
-            user_db = self.cursor.fetchall()
-            if len(user_db) > 0:
-                keyboard.add_button('Расписание', color=VkKeyboardColor.PRIMARY)
-                keyboard.add_line()
+            # self.cursor.execute("SELECT * FROM users WHERE user_id=?", (user_id,))
+            # user_db = self.cursor.fetchall()
+            # if len(user_db) > 0:
+            #     keyboard.add_button('🍺Расписание🍺', color=VkKeyboardColor.PRIMARY)
+            #     keyboard.add_line()
+            #     keyboard.add_button('😈Сессия😈', color=VkKeyboardColor.PRIMARY)
+            #     keyboard.add_line()
                 
                 
         elif self.reset(txt):
@@ -321,13 +321,8 @@ class ScheduleBot(Log, DetectionRequests,DataBase):
                         mes += self.generate_text_schedule_at_days(group[0],d)
                     except Exception as e:
                         self.logError(e)
-
-                keyboard.add_button('Расписание', color=VkKeyboardColor.PRIMARY)
-                keyboard.add_line()
-                keyboard.add_button('😈Сессия😈', color=VkKeyboardColor.PRIMARY)
-                keyboard.add_line()
         
-        elif self.is_session:
+        elif self.is_session(txt):
             groups = self.get_users_group(user_id)
             if not groups:
                 mes = self.add_your_group
@@ -339,10 +334,7 @@ class ScheduleBot(Log, DetectionRequests,DataBase):
                     except Exception as e:
                         self.logError(e)
 
-                keyboard.add_button('Расписание', color=VkKeyboardColor.PRIMARY)
-                keyboard.add_line()
-                keyboard.add_button('😈Сессия😈', color=VkKeyboardColor.PRIMARY)
-                keyboard.add_line()
+                
             
 
         elif self.valid_group_number(txt):
@@ -363,7 +355,11 @@ class ScheduleBot(Log, DetectionRequests,DataBase):
             keyboard.add_line()           
         else:
             mes = self.error_group_number
-
-        keyboard.add_button('Сбросить', color=VkKeyboardColor.NEGATIVE)
+        
+        keyboard.add_button('🍺Расписание🍺', color=VkKeyboardColor.PRIMARY)
+        keyboard.add_line()
+        keyboard.add_button('😈Сессия😈', color=VkKeyboardColor.PRIMARY)
+        keyboard.add_line()
+        keyboard.add_button('😡Сбросить😡', color=VkKeyboardColor.NEGATIVE)
 
         return(mes, keyboard.get_keyboard())
