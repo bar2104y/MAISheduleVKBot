@@ -44,7 +44,7 @@ class DetectionRequests():
         return(re.search(r'(сесси|экзам)',txt) != None)
 
     def valid_group_number(self,txt):
-        return(re.search(r'([А-я]{0,1}[0-9]{1,2}[А-я])-([0-9]{2,4}[А-я]{1,2})-([0-9]{2})',txt) != None)
+        return(re.search(r'([А-я]{0,1}[0-9]{0,2}[А-я]{1,2})-([0-9]{2,4}[А-я]{1,2})-([0-9]{2})',txt) != None)
 
     def get_count_days(self,txt):
         d = 2
@@ -54,6 +54,15 @@ class DetectionRequests():
             return(d)
 
 class DataBase():
+    '''
+    0 - ошибок нет
+    1 - неизвестная ошибка
+
+    101-199 - ошибки работы с БД
+    101 - Не удается установить соединение
+    102 - Некорректный формат данных
+    103 - Ошибка создания записи
+    '''
     def __init__(self):
         self.conn = sqlite3.connect("MAISchedule2.db")
         self.cursor = self.conn.cursor()
@@ -65,6 +74,20 @@ class DataBase():
     def get_users_by_group(self,group):
         self.cursor.execute("SELECT user_id FROM users WHERE group_number = ?", (group, ))
         return(self.cursor.fetchall())
+
+    def get_user_by_id(self, user_id):
+        self.cursor.execute("SELECT * FROM users WHERE user_id = ?", (user_id, ))
+        return(self.cursor.fetchall()[0])
+
+    def register_user(self, user_id, group_number, notifications):
+        self.cursor.execute("SELECT * FROM users WHERE user_id = ?", ( user_id , ))
+        if len(self.cursor.fetchall()) < 1:
+            self.cursor.execute("INSERT INTO users  VALUES (NULL,?,?,?)", (user_id, group_number, notifications))
+            self.conn.commit()
+            return 0
+        else:
+            return 103
+        
 
 
 class ScheduleBot(Log, DetectionRequests,DataBase):
@@ -350,9 +373,7 @@ class ScheduleBot(Log, DetectionRequests,DataBase):
             except Exception as e:
                 self.logError(e)
 
-            mes += self.added_notifications  
-            keyboard.add_button('Расписание', color=VkKeyboardColor.PRIMARY)
-            keyboard.add_line()           
+            mes += self.added_notifications   
         else:
             mes = self.error_group_number
         
