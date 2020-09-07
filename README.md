@@ -8,8 +8,9 @@
  * Отвечает на запрос о помощи
 
 ## Используемые дополнительные пакеты
- * BeautifulSoup4
- * vk_api
+ * pip install lxml
+ * pip install bs4
+ * pip install vk_api
  
 ## Содержимое config.py
 ```python3
