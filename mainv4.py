@@ -1,25 +1,24 @@
-import time
-
-import vk_api
 from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
 from vk_api.utils import get_random_id
-from vk_api.keyboard import VkKeyboard, VkKeyboardColor
+
+import vk_api
 
 # Импорт конфигурации
 from config import token, group_vk
 from ScheduleBot import ScheduleBot
 
-Controller = ScheduleBot() 
+Controller = ScheduleBot()
+
 
 def main():
     # Инициализация бота
     vk_session = vk_api.VkApi(token=token)
-    longpoll = VkBotLongPoll(vk_session, group_vk)
+    longpoll_session = VkBotLongPoll(vk_session, group_vk)
     vk = vk_session.get_api()
 
     # Прослушивание событий
-    for event in longpoll.listen():
-        #Из всех событий нас интересуют только новые сообщения
+    for event in longpoll_session.listen():
+        # Из всех событий нас интересуют только новые сообщения
         if event.type == VkBotEventType.MESSAGE_NEW:
             # Проверяем запрос
             # Проверяем пользователя
@@ -27,10 +26,11 @@ def main():
             # Отправляяем ответ
             mes, keyboard = Controller.thread(event.obj.text, event.obj.from_id)
             vk.messages.send(
-                    peer_id=event.obj.from_id,
-                    random_id=get_random_id(),
-                    keyboard=keyboard,
-                    message=mes )
+                peer_id=event.obj.from_id,
+                random_id=get_random_id(),
+                keyboard=keyboard,
+                message=mes)
+
 
 while True:
     try:
