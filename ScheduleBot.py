@@ -181,7 +181,7 @@ class ScheduleBot(Log, DetectionRequests, DataBase):
             self.cursor.execute("SELECT * FROM sessions WHERE group_id=?", (group_id,))
             tmp = self.cursor.fetchall()
 
-            return (tmp)
+            return tmp
         except Exception as e:
             self.logError(e)
 
@@ -218,11 +218,6 @@ class ScheduleBot(Log, DetectionRequests, DataBase):
             mes += 'Группа: ' + schedule[0][0] + '\n'
             for i in range(len(schedule)):
                 mes += 'Время:  {}\nТип:    {}\nЧто:    {}\nГде:    {}\n\n'.format(schedule[i][2], schedule[i][3], schedule[i][4], schedule[i][5])
-                # '     Группа:     Группа:    Группа:      Группа:
-                # mes += 'Время: ' + schedule[i][2] + '\n'
-                # mes += 'Тип: ' + schedule[i][3] + '\n'
-                # mes += 'Что: ' + schedule[i][4] + '\n'
-                # mes += 'Где: ' + schedule[i][5] + '\n\n'
 
         return mes
 
@@ -256,6 +251,8 @@ class ScheduleBot(Log, DetectionRequests, DataBase):
             l_time = '14:45 – 16:15'
         elif lesson == 5:
             l_time = '16:30 – 18:00'
+        elif lesson == 6:
+            l_time = '18:15 – 19:45'
         else:
             return False
 
