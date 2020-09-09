@@ -4,15 +4,15 @@ db = SqliteDatabase('Base.db')
 
 
 class Rooms(Model):
-    name = CharField(max_length=20)
-    description = TextField()
+    name = CharField(max_length=20, unique=True)
+    description = TextField(null=True)
 
     class Meta:
         database = db
 
 
 class Teachers(Model):
-    photo = TextField(null=True, unique=True)
+    photo = TextField(null=True)
     first_name = CharField(max_length=30)
     second_name = CharField(max_length=30)
     surname = CharField(max_length=30)
@@ -25,14 +25,14 @@ class Teachers(Model):
 
 class Subjects(Model):
     name = CharField(max_length=120)
-    description = TextField()
+    description = TextField(null=True)
 
     class Meta:
         database = db
 
 
 class Groups(Model):
-    group = CharField(max_length=14)
+    group = CharField(max_length=14, unique=True)
 
     class Meta:
         database = db
@@ -51,8 +51,8 @@ class Lessons(Model):
     subject = ForeignKeyField(Subjects, verbose_name="lessons")
     day = DateField()
     number = SmallIntegerField()
-    teacher = ForeignKeyField(Teachers, verbose_name='lessons')
-    room = ForeignKeyField(Rooms, related_name='lessons')
+    teacher = ForeignKeyField(Teachers, verbose_name='lessons', null=True)
+    room = ForeignKeyField(Rooms, related_name='lessons', null=True)
     group = ForeignKeyField(Groups, related_name='lessons')
 
     class Meta:
