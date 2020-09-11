@@ -123,7 +123,6 @@ class Messages:
         print("--------RESULT--------")
 
 
-
 if __name__ == "__main__":
     print(Messages.__doc__)
     Messages.tests()
