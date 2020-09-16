@@ -1,4 +1,5 @@
 from peewee import *
+import datetime
 
 db = SqliteDatabase('Base.db')
 
@@ -112,6 +113,41 @@ class Controller:
                 return subject[0].id
 
     @staticmethod
+    def register_user(name, vk_id):
+
+        subject = Groups.select().where(Groups.group == name)
+        user = Users.select().where(Users.vk_id == vk_id)
+
+        if subject.count() < 1:
+            res = Groups.create(group=name)
+        else:
+            res = subject[0]
+
+        if user.count() < 1:
+            user = Users.create(group=res, vk_id=vk_id)
+        else:
+            Users.update(group=res).where(Users.vk_id == vk_id).execute()
+            user = Users.select().where(Users.vk_id == vk_id)[0]
+        return user.id
+
+    @staticmethod
+    def delete_user(vk_id):
+        user = Users.select().where(Users.vk_id == vk_id)
+        if user.count() > 0:
+            Users.delete().where(Users.vk_id == vk_id).execute()
+
+        return True
+
+    @staticmethod
+    def get_schedule_n_day(group_id, day=2):
+        tomorrow = datetime.date.today()+datetime.timedelta(days=1)
+        lessons = Lessons.select().where((Lessons.group == group_id) & (Lessons.day >= datetime.time().strftime("%d.%m")) & (Lessons.day <= tomorrow.strftime("%d.%m")))
+        for lesson in lessons:
+            print(lesson.day, lesson.subject.name)
+
+
+
+    @staticmethod
     def save_lesson(subject, day, type, number, teacher, room, group):
         lesson = Lessons.select().where(Lessons.day == day,
                                         Lessons.number == number,
@@ -132,8 +168,12 @@ class Controller:
                               Lessons.teacher: teacher,
                               Lessons.room: room}).where(Lessons.day == day,
                                                          Lessons.number == number,
-                                                         Lessons.group == group)
+                                                         Lessons.group == group).execute()
             return lesson[0].id
+
+    @staticmethod
+    def get_user_by_vk_id(id):
+        return Users.select().where(Users.vk_id == id).limit(1)
 
 
 def init():

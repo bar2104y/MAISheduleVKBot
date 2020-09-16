@@ -1,11 +1,12 @@
+import classifier
+import texts
+import data_controller
+import vk_api
 from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
 from vk_api.utils import get_random_id
 
-import vk_api
-
 # Импорт конфигурации
 from config import token, group_vk
-import classifier
 
 
 def main():
@@ -19,12 +20,23 @@ def main():
         # Из всех событий нас интересуют только новые сообщения
         if event.type == VkBotEventType.MESSAGE_NEW:
             if event.obj.from_id == 209832291:
+                if event.obj.text == "stop":
+                    exit(111)
                 res = classifier.Messages.parse(event.obj.text)
+                if res["is_to_bot"]:
+                    if "schedule" in res["type"]:
+                        mes, keyboard = data_controller.Schedule.response(res, event.obj.from_id)
+                    elif "profile" in res["type"]:
+                        mes, keyboard = data_controller.Profile.response(res, event.obj.from_id)
+                    else:
+                        pass
+                else:
+                    mes = texts.no_to_bot_mes()
 
                 vk.messages.send(
                     peer_id=event.obj.from_id,
                     random_id=get_random_id(),
-                    message=res["type"])
+                    message=mes)
 
 
 # while True:
@@ -34,4 +46,5 @@ def main():
 #         print(e.__class__)
 #         print(str(e))
 
-main()
+if __name__ == "__main__":
+    main()

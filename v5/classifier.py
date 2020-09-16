@@ -110,7 +110,7 @@ class Messages:
         ]
 
         k = 0
-        allRight  = True
+        allRight = True
         for i in data:
             k += 1
             res = Messages.parse(i[0]) == i[1]
