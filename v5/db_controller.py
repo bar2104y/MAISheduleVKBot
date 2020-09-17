@@ -139,11 +139,12 @@ class Controller:
         return True
 
     @staticmethod
-    def get_schedule_n_day(group_id, day=2):
-        tomorrow = datetime.date.today()+datetime.timedelta(days=1)
-        lessons = Lessons.select().where((Lessons.group == group_id) & (Lessons.day >= datetime.time().strftime("%d.%m")) & (Lessons.day <= tomorrow.strftime("%d.%m")))
-        for lesson in lessons:
-            print(lesson.day, lesson.subject.name)
+    def get_schedule_n_day(group_id, day=2, offset=0):
+        tomorrow = datetime.date.today()+datetime.timedelta(days=day+offset-1)
+        today = datetime.date.today()+datetime.timedelta(days=offset)
+        lessons = Lessons.select().where((Lessons.group == group_id) & (Lessons.day >= today.strftime("%d.%m")) & (Lessons.day <= tomorrow.strftime("%d.%m")))
+
+        return lessons
 
 
 
@@ -174,6 +175,23 @@ class Controller:
     @staticmethod
     def get_user_by_vk_id(id):
         return Users.select().where(Users.vk_id == id).limit(1)
+
+    @staticmethod
+    def toggle_notification(vk_id, enable=-1):
+
+        if enable == 0:
+            Users.update(notification=False).where(Users.vk_id == vk_id).execute()
+            r = True
+        elif enable == 1:
+            Users.update(notification=True).where(Users.vk_id == vk_id).execute()
+            r = False
+        else:
+            user = Controller.get_user_by_vk_id(vk_id)[0]
+            r = not user.notification
+            Users.update(notification=r).where(Users.vk_id == vk_id).execute()
+
+        return r
+
 
 
 def init():
